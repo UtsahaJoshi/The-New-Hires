@@ -11,6 +11,7 @@ interface Message {
     sender_name: string;
     timestamp: string;
     is_bot: boolean;
+    sender_avatar: string | null;
 }
 
 export default function Messages() {
