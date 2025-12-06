@@ -9,6 +9,8 @@ from sqlalchemy.future import select
 from .gamification_utils import update_effort_and_collaboration, update_quality
 from .ai_utils import analyze_diff
 from sqlalchemy.ext.asyncio import AsyncSession
+from .socket_instance import sio
+from datetime import datetime
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -37,6 +39,19 @@ async def process_pr_review(payload: dict, access_token: str):
     if not access_token:
         print("No access token found for PR review")
         return
+
+
+    # 0. Post Immediate "Ack" Comment
+    async with httpx.AsyncClient() as client:
+        comment_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pull_number}/comments"
+        await client.post(
+            comment_url,
+            headers={
+                "Authorization": f"token {access_token}",
+                "Accept": "application/vnd.github.v3+json"
+            },
+            json={"body": "👀 I've seen your PR and I'm running an AI review now..."}
+        )
 
     # 1. Fetch Diff
     async with httpx.AsyncClient() as client:
@@ -109,6 +124,20 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks, db
                 if user and user.access_token:
                     # Run logic in background
                     background_tasks.add_task(process_pr_review, payload, user.access_token)
+                    
+                    # Notify App via Socket
+                    pr_title = payload.get("pull_request", {}).get("title", "Unknown PR")
+                    pr_url = payload.get("pull_request", {}).get("html_url", "#")
+                    repo_name = payload.get("repository", {}).get("full_name", "repository")
+                    
+                    await sio.emit("new_message", {
+                        "channel": "dev",
+                        "content": f"🚀 **New Pull Request**: {user.username} opened **{pr_title}** in `{repo_name}`.\n[View on GitHub]({pr_url})",
+                        "sender_name": "GitHub Bot",
+                        "timestamp": datetime.now().isoformat(),
+                        "is_bot": True,
+                        "id": 0 # Temporary ID for socket message
+                    })
         elif action == "closed":
             # Update ticket status?
             pass
