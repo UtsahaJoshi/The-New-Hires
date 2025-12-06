@@ -72,7 +72,7 @@ export default function Retrospective() {
                     <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
                         Sprint Retrospective
                     </h1>
-                    <p className="text-xl text-gray-300 max-w-lg mx-auto">
+                    <p className="text-xl text-slate-600 max-w-lg mx-auto">
                         Congratulations on surviving your first sprint!
                         It's time for the "Testimonial" - a video record of your experience for the company archives.
                     </p>
@@ -111,7 +111,7 @@ export default function Retrospective() {
 
             {step === 'review' && (
                 <div className="space-y-6 w-full max-w-2xl">
-                    <h2 className="text-3xl font-bold text-white">Review Your Testimonial</h2>
+                    <h2 className="text-3xl font-bold text-slate-900">Review Your Testimonial</h2>
                     <div className="aspect-video bg-black rounded-2xl overflow-hidden border border-gray-700">
                         <video ref={videoRef} className="w-full h-full" />
                     </div>
@@ -139,8 +139,8 @@ export default function Retrospective() {
                         <Play className="w-12 h-12 text-white fill-current" />
                     </div>
                     <div>
-                        <h1 className="text-5xl font-extrabold text-white mb-4">You're Hired!</h1>
-                        <p className="text-2xl text-gray-300">Welcome to the team, officially.</p>
+                        <h1 className="text-5xl font-extrabold text-slate-900 mb-4">You're Hired!</h1>
+                        <p className="text-2xl text-slate-600">Welcome to the team, officially.</p>
                     </div>
                     <div className="bg-gray-800/50 p-8 rounded-2xl max-w-2xl mx-auto border border-gray-700">
                         <p className="text-gray-400 leading-relaxed">
@@ -150,7 +150,7 @@ export default function Retrospective() {
                     </div>
                     <button
                         onClick={() => navigate('/')}
-                        className="text-blue-400 hover:text-white underline text-lg"
+                        className="text-blue-600 hover:text-blue-800 underline text-lg"
                     >
                         Return to Dashboard
                     </button>

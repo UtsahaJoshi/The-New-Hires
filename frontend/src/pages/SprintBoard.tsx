@@ -66,7 +66,7 @@ export default function SprintBoard() {
     return (
         <div className="h-full flex flex-col relative">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-white">Sprint Board</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Sprint Board</h1>
                 <div className="text-sm text-gray-400 italic">
                     Tickets assigned by Manager via Jira Sync
                 </div>

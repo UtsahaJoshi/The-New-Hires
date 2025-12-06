@@ -51,12 +51,18 @@ export default function Onboarding() {
         }
     };
 
+    const toggleTask = (id: number) => {
+        setTasks(tasks.map(t =>
+            t.id === id ? { ...t, completed: !t.completed } : t
+        ));
+    };
+
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Onboarding Checklist</h1>
-                    <p className="text-gray-400">Complete these tasks to verify your environment.</p>
+                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Onboarding Checklist</h1>
+                    <p className="text-slate-500">Complete these tasks to verify your environment.</p>
                 </div>
                 <button
                     onClick={generateRepo}
@@ -69,7 +75,11 @@ export default function Onboarding() {
 
             <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
                 {tasks.map((task) => (
-                    <div key={task.id} className="p-4 border-b border-gray-800 flex items-center justify-between hover:bg-gray-800/50 transition-colors">
+                    <div
+                        key={task.id}
+                        onClick={() => toggleTask(task.id)}
+                        className="p-4 border-b border-gray-800 flex items-center justify-between hover:bg-gray-800/50 transition-colors cursor-pointer"
+                    >
                         <div className="flex items-center">
                             {task.completed ?
                                 <CheckCircle className="w-6 h-6 text-green-500 mr-4" /> :

@@ -103,8 +103,8 @@ export default function StandupMeeting() {
         <div className="flex flex-col items-center justify-center h-full p-6 text-center">
             {step === 'waiting' && (
                 <div className="space-y-6">
-                    <h1 className="text-3xl font-bold text-white">Morning Standup</h1>
-                    <p className="text-gray-400">Join the daily meeting with your AI coworkers.</p>
+                    <h1 className="text-3xl font-bold text-slate-900">Morning Standup</h1>
+                    <p className="text-slate-500">Join the daily meeting with your AI coworkers.</p>
                     <button
                         onClick={startMeeting}
                         className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform hover:scale-105"
@@ -121,7 +121,7 @@ export default function StandupMeeting() {
                         <div className="absolute inset-0 rounded-full border-4 border-white/20 animate-pulse"></div>
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-white">{coworker.name}</h2>
+                        <h2 className="text-2xl font-bold text-slate-900">{coworker.name}</h2>
                         <p className="text-indigo-400">{coworker.role}</p>
                     </div>
                     <div className="bg-gray-800/50 p-6 rounded-xl max-w-lg mx-auto border border-gray-700">
@@ -168,8 +168,8 @@ export default function StandupMeeting() {
                         </div>
                     </div>
 
-                    <h2 className="text-2xl font-bold text-white">Your Turn</h2>
-                    <p className="text-gray-400">Tell us what you did yesterday and what you're doing today.</p>
+                    <h2 className="text-2xl font-bold text-slate-900">Your Turn</h2>
+                    <p className="text-slate-500">Tell us what you did yesterday and what you're doing today.</p>
 
                     {!isRecording ? (
                         <button
@@ -196,7 +196,7 @@ export default function StandupMeeting() {
                     <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
                         <Play className="w-10 h-10 text-green-500 fill-current" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white">Standup Completed!</h2>
+                    <h2 className="text-2xl font-bold text-slate-900">Standup Completed!</h2>
                     <div className="bg-gray-800 p-6 rounded-xl max-w-lg mx-auto text-left">
                         <h3 className="text-sm font-bold text-gray-500 uppercase mb-2">Transcript Analysis</h3>
                         <p className="text-gray-300">{transcript}</p>
@@ -205,7 +205,7 @@ export default function StandupMeeting() {
 
                     <button
                         onClick={() => window.location.reload()}
-                        className="text-gray-400 hover:text-white underline"
+                        className="text-slate-500 hover:text-slate-900 underline"
                     >
                         Leave Meeting
                     </button>
