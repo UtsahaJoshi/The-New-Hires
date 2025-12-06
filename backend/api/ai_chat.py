@@ -54,10 +54,19 @@ async def trigger_ai_response_task(channel: str, user_message: str):
             
             client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
             
+            channel_context = {
+                "general": "You are hanging out in the #general channel. Keep it casual, fun, and broad. Answer in a general way.",
+                "dev": "You are in the #dev channel. Be weirdly specific, technical, and use software engineering jargon. Assume everyone knows how to code.",
+                "code-review": "You are in the #code-review channel. Be picky, ask critical questions, or ask for code reviews. Act like a senior engineer reviewing a junior's PR.",
+                "random": "You are in the #random channel. Ignore work topics. Tell jokes, share random facts, or talk about conspiracy theories. Be funny and weird."
+            }
+            
+            specific_context = channel_context.get(channel, "You are in a chat channel.")
+
             prompt = f"""
             Act as {teammate['name']}, a {teammate['role']} at a tech startup.
             Style: {teammate['style']}
-            Channel: {channel}
+            Context: {specific_context}
             
             A teammate just sent: "{user_message}"
             

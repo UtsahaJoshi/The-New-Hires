@@ -31,7 +31,7 @@ class MessageOut(BaseModel):
 @router.get("/{channel}", response_model=List[MessageOut])
 async def get_messages(channel: str, db: AsyncSession = Depends(get_db)):
     # Join with User to get sender details
-    if channel not in ["general", "dev", "code-review"]:
+    if channel not in ["general", "dev", "code-review", "random"]:
          raise HTTPException(status_code=400, detail="Invalid channel")
          
     stmt = select(Message, User).outerjoin(User, Message.sender_id == User.id).where(Message.channel == channel).order_by(Message.timestamp.asc())

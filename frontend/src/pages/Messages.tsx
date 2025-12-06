@@ -93,7 +93,7 @@ export default function Messages() {
         }
     };
 
-    const channels = ['general', 'dev', 'code-review'];
+    const channels = ['general', 'dev', 'code-review', 'random'];
 
     return (
         <div className="h-[calc(100vh-8rem)] flex bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
@@ -131,9 +131,13 @@ export default function Messages() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {messages.map((msg) => (
                         <div key={msg.id} className="flex items-start group">
-                            <div className="w-10 h-10 rounded-full bg-gray-700 flex-shrink-0 mr-3 flex items-center justify-center text-sm font-bold text-gray-300">
-                                {msg.sender_name?.[0]?.toUpperCase() || '?'}
-                            </div>
+                            {msg.sender_avatar ? (
+                                <img src={msg.sender_avatar} alt={msg.sender_name} className="w-10 h-10 rounded-full object-cover mr-3 bg-gray-700" />
+                            ) : (
+                                <div className="w-10 h-10 rounded-full bg-gray-700 flex-shrink-0 mr-3 flex items-center justify-center text-sm font-bold text-gray-300">
+                                    {msg.sender_name?.[0]?.toUpperCase() || '?'}
+                                </div>
+                            )}
                             <div className="flex-1">
                                 <div className="flex items-baseline">
                                     <span className="font-medium text-white mr-2">{msg.sender_name}</span>
