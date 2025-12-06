@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+sqlalchemy
+alembic
+asyncpg
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+httpx
+python-socketio
+openai
+google-cloud-storage
+python-dotenv

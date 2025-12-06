@@ -1,0 +1,12 @@
+id - INTEGER
+github_id - VARCHAR
+username - VARCHAR
+avatar_url - VARCHAR
+access_token - VARCHAR
+xp - INTEGER
+level - INTEGER
+truthfulness - INTEGER
+effort - INTEGER
+reliability - INTEGER
+collaboration - INTEGER
+quality - INTEGER
