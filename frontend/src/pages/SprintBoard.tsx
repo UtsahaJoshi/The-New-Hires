@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import api from '../api/client';
-import { MoreVertical, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 interface Ticket {
     id: number;
@@ -23,18 +23,19 @@ const columns = {
 export default function SprintBoard() {
     const [tickets, setTickets] = useState<Ticket[]>([]);
 
-    useEffect(() => {
-        fetchTickets();
-    }, []);
-
-    const fetchTickets = async () => {
+    const fetchTickets = useCallback(async () => {
         try {
             const res = await api.get('/tickets');
             setTickets(res.data);
         } catch (error) {
             console.error("Failed to fetch tickets", error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        // eslint-disable-next-line
+        fetchTickets();
+    }, [fetchTickets]);
 
     const getTicketsByStatus = (status: string) => {
         return tickets.filter(t => t.status === status);
