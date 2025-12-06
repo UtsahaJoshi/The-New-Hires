@@ -37,7 +37,7 @@ class TicketOut(BaseModel):
     assignee_id: Optional[int]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 @router.get("/", response_model=List[TicketOut])
 async def get_tickets(db: AsyncSession = Depends(get_db)):
