@@ -21,9 +21,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", "https://the-new-hires-frontend.vercel.app"]
-    allow_origins=[origin.strip() for origin in os.getenv("FRONTEND_URL", "http://localhost:5173").split(",")], # Specific origin for credentials support
-    allow_credentials=True,
+    allow_origins=["*"], # Allow all origins
+    allow_credentials=False, # Disable credentials (cookies/headers)
     allow_methods=["*"],
     allow_headers=["*"],
 )
