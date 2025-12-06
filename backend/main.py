@@ -28,7 +28,7 @@ app.add_middleware(
 )
 
 # Socket.IO
-sio = messages.sio
+from api.socket_instance import sio
 # Mount at /socket.io so uvicorn main:app works
 app.mount("/socket.io", socketio.ASGIApp(sio, socketio_path=""))
 
