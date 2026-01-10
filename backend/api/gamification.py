@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from database import get_db
 from models import User, Achievement
 
@@ -19,8 +19,7 @@ class UserStats(BaseModel):
     quality: int = 50
     avatar_url: Optional[str]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.get("/leaderboard", response_model=List[UserStats])
 async def get_leaderboard(limit: int = 10, db: AsyncSession = Depends(get_db)):

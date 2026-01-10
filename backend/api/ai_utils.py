@@ -1,41 +1,151 @@
-import openai
+from google import genai
 from fastapi import HTTPException
 import os
 import json
+import asyncio
+from gtts import gTTS
+import io
+import httpx
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+
+client = None
+if GEMINI_API_KEY:
+    client = genai.Client(api_key=GEMINI_API_KEY, http_options={'api_version': 'v1'})
 
 async def analyze_diff(diff: str, pr_title: str) -> dict:
-    if not OPENAI_API_KEY:
-        raise HTTPException(status_code=500, detail="OpenAI API Key not configured")
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Gemini API Key not configured")
 
     try:
-        client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
+
         
         prompt = f"""
-        Act as a senior software engineer. Review the following code diff and provide constructive feedback.
-        Return the response as a JSON object with a key "comments", which is a list of objects containing "file", "line", and "message".
-        IMPORTANT: The "file" must be the filename as seen in the diff. The "line" must be the line number in the new file (right side of diff).
+        Act as a Passionate, Senior Human Developer. Do NOT sound like an AI. 
         
         PR Title: {pr_title}
+        
+        **Instructions:**
+        1. **Be Opinionated**: Write in the first person ("I"). Tell me what you *honestly* think.
+        2. **Be Personal**: "I love how you did X" or "This part makes me nervous".
+        3. **Comprehensive Review**: Do NOT be brief. I want a detailed analysis.
+        4. **Clean Code Focus**: If there are no bugs, focus entirely on readability/elegance.
+        
+        **Your Output:**
+        Return a JSON object with this structure:
+        {{
+            "summary": "Your personal take on this PR. 3-4 sentences. Be thorough.",
+            "comments": [
+                {{
+                    "file": "filename",
+                    "line": line_number_int,
+                    "category": "Opinion|Security|Performance|Pro-Tip",
+                    "message": "Your personal thought on this specific line.",
+                    "suggestion": "Optional code snippet if you have a better idea"
+                }}
+            ]
+        }}
         
         Diff:
         {diff}
         """
         
-        response = await client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt
         )
         
-        content = response.choices[0].message.content
+        content = response.text
+        # Clean up potential markdown formatting
+        if content.strip().startswith("```json"):
+            content = content.strip()[7:]
+        if content.strip().startswith("```"):
+            content = content.strip()[3:]
+        if content.strip().endswith("```"):
+            content = content.strip()[:-3]
+            
         return json.loads(content)
         
     except Exception as e:
-        print(f"OpenAI Error: {e}")
-        # Return empty comments on error to avoid crashing the webhook
-        return {"comments": []}
+        print(f"Gemini Error: {e}")
+        return {"summary": f"Yikes! I hit a snag while reading your code. (Error: {str(e)})", "comments": []}
+
+async def fetch_pr_diff(pr_url: str) -> str:
+    """
+    Fetches the diff of a GitHub PR. Validates URL and checks for existence.
+    """
+    if "github.com" not in pr_url or "/pull/" not in pr_url:
+        return "Error: Invalid GitHub PR URL. Please provide a link like `https://github.com/owner/repo/pull/123`."
+
+    diff_url = pr_url
+    if not diff_url.endswith(".diff"):
+        diff_url = f"{diff_url}.diff"
+        
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(diff_url, follow_redirects=True)
+            
+            if response.status_code == 404:
+                return "Error: Repo not found or private. I can only review public repositories."
+            
+            if response.status_code == 200:
+                return response.text
+            else:
+                return f"Error fetching diff: HTTP {response.status_code}"
+    except Exception as e:
+        return f"Error fetching diff: {str(e)}"
+
+async def process_pr_link(pr_url: str) -> str:
+    """
+    Fetches diff and generates a detailed review summary for chat.
+    """
+    diff_text = await fetch_pr_diff(pr_url)
+    
+    if diff_text.startswith("Error"):
+        # Explicitly return the error message to the user
+        return f"⚠️ {diff_text}"
+        
+    # If the diff is huge, truncate it
+    if len(diff_text) > 40000:
+        diff_text = diff_text[:40000] + "...(truncated)"
+    
+    # Analyze the diff
+    analysis = await analyze_diff(diff_text, f"PR: {pr_url}")
+    
+    summary = analysis.get("summary", "No summary provided.")
+    comments = analysis.get("comments", [])
+    
+    message = f"## 🕵️ AI Code Review\n**PR:** {pr_url}\n\n"
+    message += f"### 💭 Reviewer's Opinion\n{summary}\n\n"
+    
+    if comments:
+        message += "### 🔍 Key Findings\n"
+        # Prioritize security, performance, opinion, then pro-tips
+        sorted_comments = sorted(comments, key=lambda x: 0 if x.get('category') == 'Security' else 1 if x.get('category') == 'Performance' else 2 if x.get('category') == 'Opinion' else 3)
+        
+        for comment in sorted_comments[:6]:
+            icon = "🗣️"
+            cat = comment.get('category', 'Opinion')
+            
+            if cat == 'Security': icon = "🔒"
+            elif cat == 'Performance': icon = "⚡"
+            elif cat == 'Opinion': icon = "💬"
+            elif 'Pro-Tip' in cat: icon = "💡"
+            
+            message += f"- {icon} **{comment.get('file')}** (Line {comment.get('line')}): {comment.get('message')}\n"
+            if comment.get('suggestion'):
+                 message += f"  > Suggestion: `{comment.get('suggestion')}`\n"
+    
+        if len(comments) > 6:
+            message += f"\n*...and {len(comments) - 6} more improvements found.*"
+    elif "Error" in summary or "Yikes" in summary:
+        message += "\n❌ **Review Interrupted**: See my opinion above for what went wrong."
+    else:
+        message += "✅ **Code looks clean!** I honestly couldn't find anything to complain about."
+
+    return message
 
 # Voice Mapping
 VOICE_MAP = {
@@ -47,61 +157,67 @@ VOICE_MAP = {
 }
 
 async def generate_coworker_update(name: str, role: str, context: str) -> str:
-    if not OPENAI_API_KEY:
+    if not GEMINI_API_KEY:
         return f"I am working on {context}. No blockers."
         
-    client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
-    prompt = f"""
-    Act as {name}, a {role} at a tech startup. Give a very short (1-2 sentences) daily standup update.
-    Context: {context}.
-    Tone: Casual, slightly tired but professional.
-    """
-    
-    response = await client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
+    try:
+        prompt = f"""
+        Act as {name}, a {role} at a tech startup. Give a very short (1-2 sentences) daily standup update.
+        Context: {context}.
+        Tone: Casual, slightly tired but professional.
+        """
+        
+        response = client.models.generate_content(model=MODEL, contents=prompt)
+        return response.text
+    except Exception as e:
+        print(f"Gemini generation error: {e}")
+        return f"I am working on {context}. No blockers."
 
 async def generate_voice(text: str, name: str) -> bytes:
-    if not OPENAI_API_KEY:
-        # Return empty bytes - frontend will handle this gracefully
-        return b''
+    # We can use gTTS even without an API key config check, but keeping alignment with others
+    # Using a simple lock or executor might be needed if this blocks, but gTTS is sync.
+    # We'll run it in a thread to keep async happy.
     
-    try:
-        client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
-        voice = VOICE_MAP.get(name, "alloy")
+    def _create_audio():
+        # Map names to accents/tlds if desired, e.g. 'com.au' for Australian
+        tld = "com"
+        if name == "Mike": tld = "co.uk"
+        if name == "Sarah": tld = "com.au"
         
-        response = await client.audio.speech.create(
-            model="tts-1",
-            voice=voice,
-            input=text
-        )
-        return response.content
+        tts = gTTS(text=text, lang='en', tld=tld)
+        fp = io.BytesIO()
+        tts.write_to_fp(fp)
+        fp.seek(0)
+        return fp.read()
+
+    try:
+        loop = asyncio.get_event_loop()
+        audio_bytes = await loop.run_in_executor(None, _create_audio)
+        return audio_bytes
     except Exception as e:
         print(f"Voice generation failed: {e}")
-        # Return empty bytes on error - frontend will show skip button
         return b''
 
 async def transcribe_audio(file_path: str) -> str:
-    if not OPENAI_API_KEY:
+    if not GEMINI_API_KEY:
         return "Mock transcription: I worked on the login feature."
         
-    client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
-    
-    with open(file_path, "rb") as audio_file:
-        transcript = await client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file
-        )
-    return transcript.text
+    try:
+        # Uploading file to Gemini
+        myfile = client.files.upload(path=file_path)
+        
+        result = client.models.generate_content(model=MODEL, contents=[myfile, "Transcribe this audio file accurately."])
+        return result.text
+    except Exception as e:
+        print(f"Transcription failed: {e}")
+        return "Error transcribing audio."
 
 async def generate_project_with_bugs(project_description: str) -> dict:
     """
     Generate a beginner-level web project with intentional bugs based on user's description.
     Returns files, bugs list, and ticket descriptions.
     """
-    if not OPENAI_API_KEY:
+    if not GEMINI_API_KEY:
         # Return a simple fallback project
         return {
             "project_name": "my-web-app",
@@ -117,8 +233,6 @@ async def generate_project_with_bugs(project_description: str) -> dict:
                 {"title": "Implement main feature", "description": "Add the core functionality", "type": "story", "priority": "HIGH", "story_points": 5}
             ]
         }
-    
-    client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
     
     prompt = f"""You are a code generator that creates beginner-level web projects with INTENTIONAL BUGS for training purposes.
 
@@ -160,14 +274,20 @@ IMPORTANT:
 """
 
     try:
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-            max_tokens=4000
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt
         )
         
-        content = response.choices[0].message.content
+        content = response.text
+        # Clean up potential markdown formatting
+        if content.strip().startswith("```json"):
+            content = content.strip()[7:]
+        if content.strip().startswith("```"):
+            content = content.strip()[3:]
+        if content.strip().endswith("```"):
+            content = content.strip()[:-3]
+            
         return json.loads(content)
     except Exception as e:
         print(f"Project generation error: {e}")

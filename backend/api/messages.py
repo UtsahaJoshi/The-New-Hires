@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from database import get_db
 from models import Message, User
@@ -25,8 +25,7 @@ class MessageOut(BaseModel):
     sender_name: Optional[str] = None
     sender_avatar: Optional[str] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.get("/{channel}", response_model=List[MessageOut])
 async def get_messages(channel: str, db: AsyncSession = Depends(get_db)):
