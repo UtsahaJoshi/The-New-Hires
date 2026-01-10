@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from database import get_db
 from models import Ticket, TicketStatus, TicketPriority, User
 from .gamification_utils import update_reliability
@@ -42,8 +42,7 @@ class TicketOut(BaseModel):
     assignee_id: Optional[int]
     due_date: Optional[datetime] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.get("/", response_model=List[TicketOut])
 async def get_tickets(db: AsyncSession = Depends(get_db)):

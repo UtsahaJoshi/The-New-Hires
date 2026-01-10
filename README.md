@@ -139,11 +139,30 @@ Backend:
 python app.py
 ```
 
-Frontend:
+#### Frontend:
 
 ```bash
 npm run dev
 ```
+
+## Running Tests Locally
+
+### Backend Tests
+Ensure you are in the `backend` directory and have your virtual environment activated:
+
+```bash
+cd backend
+pytest
+```
+
+### Frontend Tests
+Ensure you are in the `frontend` directory:
+
+```bash
+cd frontend
+npm test
+```
+
 
 
 ## Usage

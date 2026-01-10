@@ -12,3 +12,5 @@ google-genai
 google-cloud-storage
 gTTS
 python-dotenv
+pytest
+pytest-asyncio
