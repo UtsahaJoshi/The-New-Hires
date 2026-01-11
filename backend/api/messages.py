@@ -86,6 +86,10 @@ async def create_message(
     # Trigger AI response
     background_tasks.add_task(trigger_ai_response_task, message.channel, message.content)
     
+    # Update Collaboration Stat
+    from .gamification_utils import update_stat
+    await update_stat(current_user, "collaboration", 1)
+    
     return db_message
 
 # We will mount this in main.py

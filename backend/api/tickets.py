@@ -83,6 +83,15 @@ async def update_ticket(ticket_id: int, ticket_update: TicketUpdate, background_
             if db_ticket.assignee:
                 await update_reliability(db_ticket.assignee, db_ticket)
 
+        # Effort: Moving to IN_PROGRESS or CODE_REVIEW
+        from .gamification_utils import update_stat
+        if new_status == "IN_PROGRESS" and db_ticket.status != "IN_PROGRESS":
+            if db_ticket.assignee:
+                await update_stat(db_ticket.assignee, "effort", 2)
+        elif new_status == "CODE_REVIEW" and db_ticket.status != "CODE_REVIEW":
+             if db_ticket.assignee:
+                await update_stat(db_ticket.assignee, "effort", 1)
+
     # Check for status change to IN_TEST
     if "status" in update_data and update_data["status"] == "IN_TEST":
         from .ai_chat import trigger_proactive_message
