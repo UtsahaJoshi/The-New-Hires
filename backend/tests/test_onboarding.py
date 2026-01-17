@@ -44,5 +44,7 @@ async def test_onboarding_checklist_persistence():
             # Cleanup
             async with AsyncSessionLocal() as session:
                 from sqlalchemy import delete
+                from models import Activity
+                await session.execute(delete(Activity).where(Activity.user_id == user_id))
                 await session.execute(delete(User).where(User.id == user_id))
                 await session.commit()
