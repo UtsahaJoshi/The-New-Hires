@@ -17,7 +17,10 @@ export default function Onboarding() {
         repo_url?: string;
         project_name?: string;
         tickets_created?: number;
+        is_fallback?: boolean;
     } | null>(null);
+    const [backendStack, setBackendStack] = useState('Python Flask');
+    const [frontendStack, setFrontendStack] = useState('React');
 
     useEffect(() => {
         const fetchTasks = async () => {
@@ -53,14 +56,21 @@ export default function Onboarding() {
             const user = JSON.parse(userJson);
 
             const res = await api.post(`/onboarding/generate-repo?user_id=${user.id}`, {
-                project_description: projectDescription
+                project_description: projectDescription,
+                backend_stack: backendStack,
+                frontend_stack: frontendStack
             });
 
             setGeneratedResult({
                 repo_url: res.data.repo_url,
                 project_name: res.data.project_name,
-                tickets_created: res.data.tickets_created
+                tickets_created: res.data.tickets_created,
+                is_fallback: res.data.is_fallback
             });
+
+            // Reset checklist tasks locally
+            setTasks(prevTasks => prevTasks.map(t => ({ ...t, completed: false })));
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             console.error(e);
@@ -109,7 +119,7 @@ export default function Onboarding() {
                     <Sparkles className="w-6 h-6 text-purple-400" />
                     <h2 className="text-2xl font-bold text-white">Generate Your Training Project</h2>
                 </div>
-                <p className="text-gray-300 mb-6">
+                <p className="text-white mb-6">
                     Describe the project you want to build. Our AI will generate a beginner-friendly codebase
                     with intentional bugs and missing features for you to fix!
                 </p>
@@ -121,6 +131,35 @@ export default function Onboarding() {
                         placeholder="Example: A todo app with categories, due dates, and dark mode"
                         className="w-full h-24 bg-gray-900 border border-gray-600 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 resize-none"
                     />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-white mb-2">Backend Stack</label>
+                            <select
+                                value={backendStack}
+                                onChange={(e) => setBackendStack(e.target.value)}
+                                className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500"
+                            >
+                                <option>Java Spring</option>
+                                <option>Python Django</option>
+                                <option>Python Flask</option>
+                                <option>C# dotnet</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-white mb-2">Frontend Stack</label>
+                            <select
+                                value={frontendStack}
+                                onChange={(e) => setFrontendStack(e.target.value)}
+                                className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500"
+                            >
+                                <option>React</option>
+                                <option>Angular</option>
+                                <option>Vue</option>
+                                <option>Python Django templates</option>
+                            </select>
+                        </div>
+                    </div>
 
                     {/* Example suggestions */}
                     <div className="flex flex-wrap gap-2">
@@ -157,14 +196,27 @@ export default function Onboarding() {
 
                 {/* Success Result */}
                 {generatedResult && (
-                    <div className="mt-6 bg-green-900/30 border border-green-500/30 rounded-lg p-4">
-                        <h3 className="text-green-400 font-semibold mb-2">✓ Project Generated Successfully!</h3>
-                        <div className="space-y-2 text-sm">
-                            <p className="text-gray-300">
-                                <span className="text-gray-500">Project:</span> {generatedResult.project_name}
+                    <div className={`mt-6 rounded-lg p-4 border ${generatedResult.is_fallback
+                        ? "bg-orange-900/30 border-orange-500/30"
+                        : "bg-green-900/30 border-green-500/30"}`}>
+
+                        {generatedResult.is_fallback ? (
+                            <h3 className="text-orange-400 font-semibold mb-2">⚠ Warning: Standard Skeleton Created</h3>
+                        ) : (
+                            <h3 className="text-green-400 font-semibold mb-2">✓ Project Generated Successfully!</h3>
+                        )}
+
+                        {generatedResult.is_fallback && (
+                            <p className="text-orange-200 text-sm mb-4">
+                                Due to high demand, a standard project skeleton was created instead of a custom AI-generated one.
                             </p>
-                            <p className="text-gray-300">
-                                <span className="text-gray-500">Tickets created:</span> {generatedResult.tickets_created}
+                        )}
+                        <div className="space-y-2 text-sm">
+                            <p className="text-white">
+                                <span className="text-white font-medium">Project:</span> {generatedResult.project_name}
+                            </p>
+                            <p className="text-white">
+                                <span className="text-white font-medium">Tickets created:</span> {generatedResult.tickets_created}
                             </p>
                             <a
                                 href={generatedResult.repo_url}

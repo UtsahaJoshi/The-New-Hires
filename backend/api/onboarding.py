@@ -12,6 +12,8 @@ router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 class RepoRequest(BaseModel):
     project_description: str = "A simple todo app"
     repo_name: Optional[str] = None  # Auto-generated if not provided
+    backend_stack: str = "Vanilla JS"
+    frontend_stack: str = "Vanilla JS"
 
 @router.post("/generate-repo")
 async def generate_repository(request: RepoRequest, user_id: int, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
@@ -29,8 +31,12 @@ async def generate_repository(request: RepoRequest, user_id: int, background_tas
         raise HTTPException(status_code=401, detail="User not authenticated with GitHub")
 
     # Generate project with AI
-    print(f"Generating project for: {request.project_description}")
-    project = await generate_project_with_bugs(request.project_description)
+    print(f"Generating project for: {request.project_description} (Backend: {request.backend_stack}, Frontend: {request.frontend_stack})")
+    project = await generate_project_with_bugs(
+        request.project_description, 
+        backend_stack=request.backend_stack,
+        frontend_stack=request.frontend_stack
+    )
     
     # Use AI-generated repo name or provided one
     repo_name = request.repo_name or project.get("repo_name", "my-simulation-project")
@@ -143,11 +149,16 @@ jobs:
             {"repo_name": repo_name, "repo_url": repo_url}
         )
 
+        # Reset onboarding checklist for the new project
+        user.onboarding_completed_tasks = []
+        user.onboarding_completed_tasks = list(user.onboarding_completed_tasks) # Force detection
+
         return {
             "message": f"Repository created with {len(files)} files and {len(created_tickets)} tickets!",
             "repo_url": repo_url,
             "project_name": project.get("project_name"),
-            "tickets_created": len(created_tickets)
+            "tickets_created": len(created_tickets),
+            "is_fallback": project.get("is_fallback", False)
         }
 
 @router.get("/checklist")
@@ -163,7 +174,6 @@ async def get_onboarding_checklist(user_id: int, db: AsyncSession = Depends(get_
     tasks = [
         {"id": 1, "task": "Clone the repository", "xp": 50},
         {"id": 2, "task": "Open the project in your editor", "xp": 25},
-        {"id": 3, "task": "Open index.html in browser", "xp": 25},
         {"id": 4, "task": "Find and fix your first bug", "xp": 100},
         {"id": 5, "task": "Commit your fix", "xp": 50},
         {"id": 6, "task": "Complete your first Standup", "xp": 50},
