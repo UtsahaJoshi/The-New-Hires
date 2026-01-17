@@ -151,14 +151,77 @@ jobs:
         }
 
 @router.get("/checklist")
-async def get_onboarding_checklist(user_id: int):
-    # Static checklist for now
-    return [
-        {"id": 1, "task": "Clone the repository", "completed": False, "xp": 50},
-        {"id": 2, "task": "Open the project in your editor", "completed": False, "xp": 25},
-        {"id": 3, "task": "Open index.html in browser", "completed": False, "xp": 25},
-        {"id": 4, "task": "Find and fix your first bug", "completed": False, "xp": 100},
-        {"id": 5, "task": "Commit your fix", "completed": False, "xp": 50},
-        {"id": 6, "task": "Complete your first Standup", "completed": False, "xp": 50},
-        {"id": 7, "task": "Submit a Pull Request", "completed": False, "xp": 100},
+async def get_onboarding_checklist(user_id: int, db: AsyncSession = Depends(get_db)):
+    """Fetch onboarding checklist with completion status for a specific user"""
+    from sqlalchemy.future import select
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    completed_task_ids = user.onboarding_completed_tasks if user and user.onboarding_completed_tasks else []
+    
+    tasks = [
+        {"id": 1, "task": "Clone the repository", "xp": 50},
+        {"id": 2, "task": "Open the project in your editor", "xp": 25},
+        {"id": 3, "task": "Open index.html in browser", "xp": 25},
+        {"id": 4, "task": "Find and fix your first bug", "xp": 100},
+        {"id": 5, "task": "Commit your fix", "xp": 50},
+        {"id": 6, "task": "Complete your first Standup", "xp": 50},
+        {"id": 7, "task": "Submit a Pull Request", "xp": 100},
     ]
+    
+    for task in tasks:
+        task["completed"] = task["id"] in completed_task_ids
+        
+    return tasks
+
+class TaskCompletionRequest(BaseModel):
+    task_id: int
+
+@router.post("/complete-task")
+async def complete_onboarding_task(request: TaskCompletionRequest, user_id: int, db: AsyncSession = Depends(get_db)):
+    """Complete an onboarding task and award XP"""
+    from sqlalchemy.future import select
+    from .gamification_utils import award_xp
+    from .activity import log_activity
+    from models import ActivityType
+    
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if user.onboarding_completed_tasks is None:
+        user.onboarding_completed_tasks = []
+        
+    if request.task_id in user.onboarding_completed_tasks:
+        return {"message": "Task already completed", "xp_awarded": 0}
+        
+    # Get XP value (hardcoded map for now to match checklist)
+    xp_map = {1: 50, 2: 25, 3: 25, 4: 100, 5: 50, 6: 50, 7: 100}
+    xp_to_award = xp_map.get(request.task_id, 0)
+    
+    user.onboarding_completed_tasks.append(request.task_id)
+    # Using MutableList ensures SQLALchemy detects change, but we also re-assign to be sure
+    user.onboarding_completed_tasks = list(user.onboarding_completed_tasks)
+    
+    await award_xp(user, xp_to_award)
+    
+    await log_activity(
+        db,
+        user.id,
+        ActivityType.TICKET_COMPLETED, # Reusing activity type or could add new one
+        f"Completed onboarding task #{request.task_id}",
+        {"task_id": request.task_id, "xp_awarded": xp_to_award}
+    )
+    
+    await db.commit()
+    
+    return {
+        "message": "Task completed successfully",
+        "xp_awarded": xp_to_award,
+        "total_xp": user.xp,
+        "level": user.level
+    }

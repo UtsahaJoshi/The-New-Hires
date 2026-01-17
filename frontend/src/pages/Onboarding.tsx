@@ -20,16 +20,17 @@ export default function Onboarding() {
     } | null>(null);
 
     useEffect(() => {
-        // Fetch tasks
         const fetchTasks = async () => {
-            const mockTasks = [
-                { id: 1, task: "Clone the repository", completed: false, xp: 50 },
-                { id: 2, task: "Open the project in your editor", completed: false, xp: 25 },
-                { id: 3, task: "Open index.html in browser", completed: false, xp: 25 },
-                { id: 4, task: "Find and fix your first bug", completed: false, xp: 100 },
-                { id: 5, task: "Commit your fix", completed: false, xp: 50 },
-            ];
-            setTasks(mockTasks);
+            try {
+                const userJson = localStorage.getItem('user');
+                if (!userJson) return;
+                const user = JSON.parse(userJson);
+
+                const res = await api.get(`/onboarding/checklist?user_id=${user.id}`);
+                setTasks(res.data);
+            } catch (e) {
+                console.error("Failed to fetch onboarding tasks:", e);
+            }
         };
         fetchTasks();
     }, []);
@@ -67,6 +68,27 @@ export default function Onboarding() {
             alert(detail);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const toggleTask = async (taskId: number, currentStatus: boolean) => {
+        if (currentStatus) return; // Already completed
+
+        try {
+            const userJson = localStorage.getItem('user');
+            if (!userJson) return;
+            const user = JSON.parse(userJson);
+
+            await api.post(`/onboarding/complete-task?user_id=${user.id}`, {
+                task_id: taskId
+            });
+
+            // Update local state
+            setTasks(prev => prev.map(t =>
+                t.id === taskId ? { ...t, completed: true } : t
+            ));
+        } catch (e) {
+            console.error("Failed to complete task:", e);
         }
     };
 
@@ -168,7 +190,11 @@ export default function Onboarding() {
 
                 <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
                     {tasks.map((task) => (
-                        <div key={task.id} className="p-4 border-b border-gray-800 flex items-center justify-between hover:bg-gray-800/50 transition-colors">
+                        <div
+                            key={task.id}
+                            onClick={() => toggleTask(task.id, task.completed)}
+                            className={`p-4 border-b border-gray-800 flex items-center justify-between hover:bg-gray-800/50 transition-colors cursor-pointer ${task.completed ? 'opacity-75' : ''}`}
+                        >
                             <div className="flex items-center">
                                 {task.completed ?
                                     <CheckCircle className="w-6 h-6 text-green-500 mr-4" /> :
