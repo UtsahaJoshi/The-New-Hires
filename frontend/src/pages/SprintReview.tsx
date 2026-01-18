@@ -150,37 +150,43 @@ export default function SprintReview() {
                         </div>
                     )}
 
-                    {file && !analyzing && !report && (
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
-                                </svg>
-                            </div>
-                            <h4 className="text-lg font-medium text-slate-900 mb-1">{file.name}</h4>
-                            <p className="text-slate-500 mb-6">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    {file && !report && (
+                        <div className="text-center w-full">
+                            {analyzing ? (
+                                <div className="py-8">
+                                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                    <h4 className="text-lg font-medium text-slate-900 mb-1">Gemini is analyzing video...</h4>
+                                    <p className="text-slate-500">This may take a minute.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                        </svg>
+                                    </div>
+                                    <h4 className="text-lg font-medium text-slate-900 mb-1">{file.name}</h4>
+                                    <p className="text-slate-500 mb-6">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                                </>
+                            )}
+
                             <div className="flex gap-4 justify-center">
                                 <button
                                     onClick={() => setFile(null)}
-                                    className="px-6 py-3 bg-white border border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+                                    disabled={analyzing}
+                                    className="px-6 py-3 bg-white border border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors shadow-sm"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleAnalyze}
-                                    className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                                    disabled={analyzing}
+                                    className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
                                 >
-                                    Analyze Review
+                                    {analyzing && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                                    {analyzing ? 'Analyzing...' : 'Analyze Review'}
                                 </button>
                             </div>
-                        </div>
-                    )}
-
-                    {analyzing && (
-                        <div className="text-center">
-                            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-                            <h4 className="text-lg font-medium text-slate-900 mb-2">Gemini is analyzing your video...</h4>
-                            <p className="text-slate-500">This may take a few moments depending on the file size.</p>
                         </div>
                     )}
 
