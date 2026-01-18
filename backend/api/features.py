@@ -191,7 +191,8 @@ async def get_sprint_stats(user_id: int, db: AsyncSession = Depends(get_db)):
     if start_date.tzinfo is None:
         start_date = start_date.replace(tzinfo=timezone.utc)
         
-    diff = now - start_date
+    # Calculate days difference based on date (calendar days)
+    diff = now.date() - start_date.date()
     sprint_day = diff.days + 1
     
     # Cap at 7 for display logic, or let frontend handle "Sprint Complete" state
